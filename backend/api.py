@@ -362,3 +362,230 @@ async def gerar_thumbnail_completa(body: dict):
         "thumbnail_final": thumbnail.get("local"),
         "conto": conto,
     }
+
+
+# ─── Rotas: Tasks ──────────────────────────────────────────────────────────────
+
+from models.task import Task, TaskAddRequest, Subtask, SubtaskApproval
+
+@app.post("/campanhas/{campanha_id}/tasks/gerar")
+async def gerar_tasks_da_campanha(campanha_id: str, background_tasks: BackgroundTasks):
+    """
+    O Diretor lê o briefing da campanha e gera automaticamente todas as tasks.
+    Pode ser chamado ao criar a campanha ou a qualquer momento depois.
+    """
+    campanhas = load_json("campanhas.json")
+    campanha = next((c for c in campanhas if c["id"] == campanha_id), None)
+    if not campanha:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    from tools.task_planner import planejar_tasks
+    tasks_data = planejar_tasks(campanha["briefing"], campanha["conto"], campanha["canais"])
+
+    todas_tasks = load_json("tasks.json")
+
+    novas = []
+    for td in tasks_data:
+        subtasks = [
+            Subtask(
+                titulo=s["titulo"],
+                descricao=s["descricao"],
+                agente=s["agente"],
+                requer_aprovacao=s.get("requer_aprovacao", True),
+            ).model_dump()
+            for s in td.get("subtasks", [])
+        ]
+        task = Task(
+            campanha_id=campanha_id,
+            titulo=td["titulo"],
+            descricao=td["descricao"],
+            subtasks=subtasks,
+        ).model_dump()
+        todas_tasks.append(task)
+        novas.append(task)
+
+    save_json("tasks.json", todas_tasks)
+
+    # Dispara execução das tasks em background
+    background_tasks.add_task(executar_tasks, campanha_id)
+
+    return {"geradas": len(novas), "tasks": novas}
+
+
+@app.get("/campanhas/{campanha_id}/tasks")
+def listar_tasks_da_campanha(campanha_id: str):
+    todas = load_json("tasks.json")
+    return [t for t in todas if t["campanha_id"] == campanha_id]
+
+
+@app.post("/campanhas/{campanha_id}/tasks")
+async def adicionar_task(campanha_id: str, body: TaskAddRequest, background_tasks: BackgroundTasks):
+    """Adiciona uma task manualmente a uma campanha existente."""
+    campanhas = load_json("campanhas.json")
+    campanha = next((c for c in campanhas if c["id"] == campanha_id), None)
+    if not campanha:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    subtasks = [
+        Subtask(
+            titulo=s.titulo,
+            descricao=s.descricao,
+            agente=s.agente,
+            requer_aprovacao=s.requer_aprovacao,
+            instrucoes_extras=s.instrucoes_extras,
+        ).model_dump()
+        for s in body.subtasks
+    ]
+
+    task = Task(
+        campanha_id=campanha_id,
+        titulo=body.titulo,
+        descricao=body.descricao,
+        subtasks=subtasks,
+    ).model_dump()
+
+    todas = load_json("tasks.json")
+    todas.append(task)
+    save_json("tasks.json", todas)
+
+    background_tasks.add_task(executar_tasks, campanha_id)
+
+    return task
+
+
+@app.delete("/campanhas/{campanha_id}/tasks/{task_id}")
+def remover_task(campanha_id: str, task_id: str):
+    todas = load_json("tasks.json")
+    antes = len(todas)
+    todas = [t for t in todas if not (t["campanha_id"] == campanha_id and t["id"] == task_id)]
+    if len(todas) == antes:
+        raise HTTPException(status_code=404, detail="Task não encontrada")
+    save_json("tasks.json", todas)
+    return {"status": "removida"}
+
+
+@app.post("/campanhas/{campanha_id}/tasks/{task_id}/subtasks/{subtask_id}/aprovar")
+async def aprovar_subtask(
+    campanha_id: str, task_id: str, subtask_id: str,
+    body: SubtaskApproval, background_tasks: BackgroundTasks
+):
+    """
+    Aprova ou rejeita uma subtask. Se aprovada, dispara a próxima subtask automaticamente.
+    """
+    todas = load_json("tasks.json")
+    task = next((t for t in todas if t["id"] == task_id and t["campanha_id"] == campanha_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task não encontrada")
+
+    subtask = next((s for s in task["subtasks"] if s["id"] == subtask_id), None)
+    if not subtask:
+        raise HTTPException(status_code=404, detail="Subtask não encontrada")
+
+    if subtask["status"] != "aguardando_aprovacao":
+        raise HTTPException(status_code=400, detail=f"Subtask não está aguardando aprovação (status: {subtask['status']})")
+
+    now = datetime.now().isoformat()
+
+    if body.action == "approve":
+        subtask["status"] = "aprovada"
+        subtask["concluido_em"] = now
+
+        # Encontra próxima subtask pendente
+        idx = task["subtasks"].index(subtask)
+        proxima = None
+        for s in task["subtasks"][idx + 1:]:
+            if s["status"] == "pendente":
+                proxima = s
+                break
+
+        if proxima:
+            proxima["status"] = "executando"
+            proxima["iniciado_em"] = now
+            task["status"] = "executando"
+            background_tasks.add_task(executar_subtask, campanha_id, task_id, proxima["id"])
+        else:
+            # Todas subtasks concluídas
+            task["status"] = "concluida"
+            task["atualizado_em"] = now
+
+    else:  # reject
+        subtask["status"] = "rejeitada"
+        subtask["feedback_rejeicao"] = body.feedback
+        task["status"] = "aguardando_aprovacao"
+
+    task["atualizado_em"] = now
+    save_json("tasks.json", todas)
+
+    return {
+        "status": subtask["status"],
+        "proxima_subtask": proxima["titulo"] if body.action == "approve" and proxima else None,
+    }
+
+
+# ─── Background: execução de tasks e subtasks ──────────────────────────────────
+
+async def executar_tasks(campanha_id: str):
+    """Inicia a primeira subtask de cada task (rodam em paralelo)."""
+    import asyncio
+    todas = load_json("tasks.json")
+    tasks_da_campanha = [t for t in todas if t["campanha_id"] == campanha_id and t["status"] == "pendente"]
+
+    agendadas = []
+    for task in tasks_da_campanha:
+        if task["subtasks"]:
+            primeira = task["subtasks"][0]
+            primeira["status"] = "executando"
+            primeira["iniciado_em"] = datetime.now().isoformat()
+            task["status"] = "executando"
+            task["atualizado_em"] = datetime.now().isoformat()
+            agendadas.append((campanha_id, task["id"], primeira["id"]))
+
+    save_json("tasks.json", todas)
+
+    # Executa todas as primeiras subtasks em paralelo
+    await asyncio.gather(*[executar_subtask(c, t, s) for c, t, s in agendadas])
+
+
+async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
+    """
+    Executa uma subtask usando o agente responsável.
+    Por ora simula com sleep — integração real com CrewAI vai aqui.
+    """
+    import asyncio
+    await asyncio.sleep(3)  # Simula processamento do agente
+
+    todas = load_json("tasks.json")
+    task = next((t for t in todas if t["id"] == task_id), None)
+    if not task:
+        return
+
+    subtask = next((s for s in task["subtasks"] if s["id"] == subtask_id), None)
+    if not subtask:
+        return
+
+    now = datetime.now().isoformat()
+    subtask["output"] = f"[Simulado] Output do agente {subtask['agente']} para: {subtask['titulo']}"
+
+    if subtask["requer_aprovacao"]:
+        subtask["status"] = "aguardando_aprovacao"
+        task["status"] = "aguardando_aprovacao"
+    else:
+        subtask["status"] = "concluida"
+        subtask["concluido_em"] = now
+
+        # Dispara próxima subtask automaticamente se não precisa de aprovação
+        idx = task["subtasks"].index(subtask)
+        for s in task["subtasks"][idx + 1:]:
+            if s["status"] == "pendente":
+                s["status"] = "executando"
+                s["iniciado_em"] = now
+                save_json("tasks.json", todas)
+                await executar_subtask(campanha_id, task_id, s["id"])
+                return
+
+        # Não há próxima — task concluída
+        if all(s["status"] in ("concluida", "aprovada") for s in task["subtasks"]):
+            task["status"] = "concluida"
+
+    task["atualizado_em"] = now
+    save_json("tasks.json", todas)
