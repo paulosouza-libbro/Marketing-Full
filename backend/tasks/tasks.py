@@ -166,3 +166,53 @@ def task_analysis_report(agent, canal: str, periodo: str):
         agent=agent,
         expected_output="Relatório de desempenho com insights e recomendações acionáveis",
     )
+
+
+def task_pesquisa_conto(agent, conto: str):
+    return Task(
+        description=dedent(f"""
+            Pesquise profundamente o conto "{conto}" para alimentar o Copywriter da Libbro.
+
+            Usando ferramentas de pesquisa web, descubra:
+            1. Origens históricas do conto (quando e onde surgiu)
+            2. Versões ao redor do mundo (variações culturais surpreendentes)
+            3. Curiosidades e fatos pouco conhecidos
+            4. Simbolismos e significados profundos
+            5. O que torna esta história única e atemporal
+            6. Elementos que podem surpreender pais cultos e curiosos
+
+            Entregue os 5 elementos mais poderosos para um Copywriter criar
+            copy criativo com ganchos, reviravoltas e profundidade.
+        """),
+        agent=agent,
+        expected_output="5 elementos ricos e surpreendentes sobre o conto, com contexto e ganchos para copy criativo",
+    )
+
+
+def task_copy_com_pesquisa(agent, pesquisa: str, conto: str, canais: list):
+    canais_str = ", ".join(canais)
+    return Task(
+        description=dedent(f"""
+            Com base na pesquisa profunda sobre "{conto}", crie copy criativo para a Libbro.
+
+            PESQUISA DO CONTO:
+            {pesquisa}
+
+            CANAIS: {canais_str}
+
+            Para cada canal, crie copy que:
+            - Usa um gancho ou fato surpreendente da pesquisa
+            - Tem reviravoltas que prendem o leitor
+            - É sofisticado para pais, encantador para crianças
+            - NUNCA é genérico ou clickbait
+
+            Entregue:
+            1. 5 títulos YouTube criativos (máx 60 caracteres)
+            2. Descrição completa YouTube (gancho para pais + resumo para crianças + tags)
+            3. Abertura narrada do vídeo (primeiros 30s — NÃO comece com "Era uma vez")
+            4. Legenda Instagram com reviravolta e emojis elegantes
+            5. Post Twitter/X com gancho que para o scroll (máx 280 caracteres)
+        """),
+        agent=agent,
+        expected_output="Copy completo e criativo para todos os canais, rico em ganchos e profundidade literária",
+    )
