@@ -13,11 +13,19 @@ export default function NovaCampanha() {
   const [erro, setErro] = useState("");
   const [contos, setContos] = useState<{slug: string, nome: string}[]>([]);
 
+  const CONTOS_PADRAO = [
+    { slug: "cinderela", nome: "Cinderela" },
+    { slug: "joao-e-maria", nome: "João e Maria" },
+    { slug: "o-camponesinho-no-ceu", nome: "O Camponesinho no Céu" },
+    { slug: "chapeuzinho-vermelho", nome: "Chapeuzinho Vermelho" },
+    { slug: "o-pequeno-polegar", nome: "O Pequeno Polegar" },
+  ];
+
   useEffect(() => {
     fetch(`${API}/contos`)
       .then(r => r.json())
-      .then(data => setContos(Array.isArray(data) ? data : []))
-      .catch(() => setContos([{ slug: "cinderela", nome: "Cinderela" }]));
+      .then(data => setContos(Array.isArray(data) && data.length > 0 ? data : CONTOS_PADRAO))
+      .catch(() => setContos(CONTOS_PADRAO));
   }, []);
 
   const toggleCanal = (canal: string) => {
