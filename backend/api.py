@@ -549,11 +549,11 @@ async def executar_tasks(campanha_id: str):
 
 async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
     """
-    Executa uma subtask usando o agente responsável.
-    Por ora simula com sleep — integração real com CrewAI vai aqui.
+    Executa uma subtask usando o agente responsável via OpenAI.
+    Passa o contexto das subtasks anteriores concluídas da mesma task.
     """
     import asyncio
-    await asyncio.sleep(3)  # Simula processamento do agente
+    from tools.agent_executor import executar_agente
 
     todas = load_json("tasks.json")
     task = next((t for t in todas if t["id"] == task_id), None)
@@ -565,7 +565,39 @@ async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
         return
 
     now = datetime.now().isoformat()
-    subtask["output"] = f"[Simulado] Output do agente {subtask['agente']} para: {subtask['titulo']}"
+
+    try:
+        # Monta contexto das subtasks anteriores concluídas
+        idx = next(i for i, s in enumerate(task["subtasks"]) if s["id"] == subtask_id)
+        contexto_anterior = ""
+        for s in task["subtasks"][:idx]:
+            if s.get("output") and s["status"] in ("concluida", "aprovada"):
+                contexto_anterior += f"### {s['titulo']} ({s['agente']}):
+{s['output']}
+
+"
+
+        # Monta instrução completa
+        instrucao = subtask["descricao"]
+        if subtask.get("instrucoes_extras"):
+            instrucao += f"
+
+Instruções adicionais: {subtask['instrucoes_extras']}"
+
+        # Executa o agente de verdade
+        output = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: executar_agente(subtask["agente"], instrucao, contexto_anterior)
+        )
+        subtask["output"] = output
+
+    except Exception as e:
+        subtask["status"] = "erro"
+        subtask["output"] = f"Erro na execução: {str(e)}"
+        task["status"] = "erro"
+        task["atualizado_em"] = now
+        save_json("tasks.json", todas)
+        return
 
     if subtask["requer_aprovacao"]:
         subtask["status"] = "aguardando_aprovacao"
@@ -574,8 +606,7 @@ async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
         subtask["status"] = "concluida"
         subtask["concluido_em"] = now
 
-        # Dispara próxima subtask automaticamente se não precisa de aprovação
-        idx = task["subtasks"].index(subtask)
+        # Dispara próxima subtask automaticamente
         for s in task["subtasks"][idx + 1:]:
             if s["status"] == "pendente":
                 s["status"] = "executando"
@@ -584,7 +615,6 @@ async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
                 await executar_subtask(campanha_id, task_id, s["id"])
                 return
 
-        # Não há próxima — task concluída
         if all(s["status"] in ("concluida", "aprovada") for s in task["subtasks"]):
             task["status"] = "concluida"
 
