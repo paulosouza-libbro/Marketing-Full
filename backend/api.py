@@ -302,43 +302,8 @@ async def gerar_video(body: dict):
 @app.get("/analytics/canal")
 async def analytics_canal(dias: int = 30):
     from tools.content_analyzer import YouTubeAnalyzer
-    return YouTubeAnalyzer().metricas_canal(dias)
 
 
-@app.get("/analytics/videos")
-async def analytics_top_videos(limite: int = 10):
-    from tools.content_analyzer import YouTubeAnalyzer
-    return YouTubeAnalyzer().top_videos(limite)
-
-
-@app.post("/gerar/imagem/freepik")
-async def gerar_imagem_freepik(body: dict):
-    """
-    Gera imagem com Freepik AI.
-    body: { "prompt": str, "conto": str, "style": str, "ratio": str }
-    """
-    from tools.freepik_generator import FreepikGenerator
-    from pathlib import Path
-
-    gen = FreepikGenerator()
-    conto = body.get("conto", "")
-    prompt_base = body.get("prompt", "")
-
-    if conto:
-        assets = Path("../assets/ilustracoes-contos") / conto / "estilo.md"
-        if assets.exists():
-            from tools.image_generator import ImageGenerator
-            img_gen = ImageGenerator()
-            prompt = img_gen.construir_prompt_conto(assets.read_text(), prompt_base, body.get("formato", "thumbnail"))
-        else:
-            prompt = prompt_base
-    else:
-        prompt = prompt_base
-
-    return gen.gerar_imagem(prompt, body.get("style", "illustration"), body.get("ratio", "16:9"))
-
-
-@app.get("/freepik/buscar")
-async def buscar_freepik(q: str, tipo: str = "photo", limite: int = 10):
-    from tools.freepik_generator import FreepikGenerator
-    return FreepikGenerator().buscar_assets(q, tipo, limite)
+# Import de rotas adicionais
+from routes.imagem import router as imagem_router
+app.include_router(imagem_router)
