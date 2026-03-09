@@ -38,7 +38,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       fetch(`${API}/campanhas`).then(r => r.json()).catch(() => []),
       fetch(`${API}/campanhas`).then(r => r.json())
@@ -54,6 +54,12 @@ export default function Home() {
       setTasks(Array.isArray(allTasks) ? allTasks : []);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const ativas = campanhas.filter(c => c.status === "processando").length;
