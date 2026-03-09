@@ -237,3 +237,75 @@ async def executar_agentes(campanha_id: str, briefing: str, conto: str, canais: 
     campanha["etapas"][6]["status"] = "aguardando"
     campanha["atualizado_em"] = datetime.now().isoformat()
     save_json("campanhas.json", campanhas)
+
+
+# ─── Rotas: Integrações de IA ──────────────────────────────────────────────────
+
+@app.post("/gerar/imagem")
+async def gerar_imagem(body: dict):
+    """
+    Gera imagem com DALL-E 3 ou Stable Diffusion.
+    body: { "prompt": str, "conto": str, "formato": str, "modelo": "dalle|stability" }
+    """
+    from tools.image_generator import ImageGenerator
+    from pathlib import Path
+
+    gen = ImageGenerator()
+    conto = body.get("conto", "")
+    formato = body.get("formato", "thumbnail")
+    modelo = body.get("modelo", "dalle")
+    prompt_base = body.get("prompt", "")
+
+    # Enriquece prompt com estilo do conto
+    if conto:
+        assets = Path("../assets/ilustracoes-contos") / conto / "estilo.md"
+        estilo = assets.read_text() if assets.exists() else ""
+        prompt = gen.construir_prompt_conto(estilo, prompt_base, formato)
+    else:
+        prompt = prompt_base
+
+    if modelo == "stability":
+        return gen.gerar_stability(prompt)
+    else:
+        size_map = {"thumbnail": "1792x1024", "post_instagram": "1024x1024", "story": "1024x1792"}
+        return gen.gerar_dalle(prompt, size=size_map.get(formato, "1792x1024"))
+
+
+@app.post("/gerar/audio")
+async def gerar_audio(body: dict):
+    """
+    Gera narração com ElevenLabs.
+    body: { "texto": str, "voice_id": str (opcional) }
+    """
+    from tools.voice_generator import VoiceGenerator
+    gen = VoiceGenerator()
+    return gen.gerar_narração(body.get("texto", ""), body.get("voice_id"))
+
+
+@app.get("/vozes")
+async def listar_vozes():
+    from tools.voice_generator import VoiceGenerator
+    return VoiceGenerator().listar_vozes()
+
+
+@app.post("/gerar/video")
+async def gerar_video(body: dict):
+    """
+    Gera vídeo com Runway ML.
+    body: { "prompt": str, "image_url": str (opcional), "duracao": int }
+    """
+    from tools.video_generator import VideoGenerator
+    gen = VideoGenerator()
+    return gen.gerar_runway(body.get("prompt", ""), body.get("image_url"), body.get("duracao", 4))
+
+
+@app.get("/analytics/canal")
+async def analytics_canal(dias: int = 30):
+    from tools.content_analyzer import YouTubeAnalyzer
+    return YouTubeAnalyzer().metricas_canal(dias)
+
+
+@app.get("/analytics/videos")
+async def analytics_top_videos(limite: int = 10):
+    from tools.content_analyzer import YouTubeAnalyzer
+    return YouTubeAnalyzer().top_videos(limite)
