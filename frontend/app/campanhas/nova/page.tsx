@@ -112,6 +112,7 @@ export default function NovaCampanha() {
               { id: "tiktok", label: "TikTok", icon: "🎵" },
               { id: "twitter", label: "Twitter/X", icon: "🐦" },
               { id: "facebook", label: "Facebook", icon: "👥" },
+              { id: "email", label: "E-mail", icon: "📧" },
             ].map(canal => (
               <button
                 key={canal.id}
