@@ -572,17 +572,16 @@ async def executar_subtask(campanha_id: str, task_id: str, subtask_id: str):
         contexto_anterior = ""
         for s in task["subtasks"][:idx]:
             if s.get("output") and s["status"] in ("concluida", "aprovada"):
-                contexto_anterior += f"### {s['titulo']} ({s['agente']}):
-{s['output']}
-
-"
+                titulo = s['titulo']
+                agente = s['agente']
+                output = s['output']
+                contexto_anterior += f"### {titulo} ({agente}):\n{output}\n\n"
 
         # Monta instrução completa
         instrucao = subtask["descricao"]
         if subtask.get("instrucoes_extras"):
-            instrucao += f"
-
-Instruções adicionais: {subtask['instrucoes_extras']}"
+            extras = subtask["instrucoes_extras"]
+            instrucao += f"\n\nInstruções adicionais: {extras}"
 
         # Executa o agente de verdade
         output = await asyncio.get_event_loop().run_in_executor(
