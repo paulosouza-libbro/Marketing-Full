@@ -307,3 +307,58 @@ async def analytics_canal(dias: int = 30):
 # Import de rotas adicionais
 from routes.imagem import router as imagem_router
 app.include_router(imagem_router)
+
+
+# ─── Composição de thumbnail ────────────────────────────────────────────────
+
+@app.post("/thumbnail/compor")
+async def compor_thumbnail(body: dict):
+    """
+    Adiciona logo do conto sobre uma imagem base e gera a thumbnail final.
+    body: { "imagem_path": str, "conto": str, "posicao_logo": str, "logo_escala": float }
+    """
+    from tools.thumbnail_composer import ThumbnailComposer
+    composer = ThumbnailComposer()
+    return composer.compor_thumbnail(
+        imagem_base_path=body.get("imagem_path"),
+        conto_slug=body.get("conto"),
+        posicao_logo=body.get("posicao_logo", "bottom-right"),
+        logo_escala=body.get("logo_escala", 0.40),
+    )
+
+
+@app.post("/thumbnail/gerar-completa")
+async def gerar_thumbnail_completa(body: dict):
+    """
+    Fluxo completo: gera imagem com DALL-E + adiciona logo do conto automaticamente.
+    body: { "prompt": str, "conto": str, "posicao_logo": str }
+    """
+    from tools.image_generator import ImageGenerator
+    from tools.thumbnail_composer import ThumbnailComposer
+    from pathlib import Path
+
+    # 1. Gera imagem base
+    gen = ImageGenerator()
+    conto = body.get("conto", "")
+    assets = Path("../assets/ilustracoes-contos") / conto / "estilo.md"
+    estilo = assets.read_text() if assets.exists() else ""
+    prompt = gen.construir_prompt_conto(estilo, body.get("prompt", ""), "thumbnail")
+    resultado = gen.gerar_dalle(prompt, size="1792x1024")
+
+    if resultado.get("status") != "ok":
+        return resultado
+
+    # 2. Compõe com logo
+    composer = ThumbnailComposer()
+    thumbnail = composer.compor_thumbnail(
+        imagem_base_path=resultado["local"],
+        conto_slug=conto,
+        posicao_logo=body.get("posicao_logo", "bottom-right"),
+    )
+
+    return {
+        "status": "ok",
+        "imagem_base": resultado["url"],
+        "thumbnail_final": thumbnail.get("local"),
+        "conto": conto,
+    }
