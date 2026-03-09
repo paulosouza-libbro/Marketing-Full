@@ -25,3 +25,12 @@ GA4_PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
 # App
 ASSETS_PATH = os.getenv("ASSETS_PATH", "../assets")
 APPROVAL_REQUIRED = True  # Nunca publicar sem aprovação humana
+
+# Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Freepik
+FREEPIK_API_KEY = os.getenv("FREEPIK_API_KEY")
+
+# LLM padrão (openai | gemini)
+DEFAULT_LLM = os.getenv("DEFAULT_LLM", "openai")

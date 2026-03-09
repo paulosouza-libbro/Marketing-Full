@@ -32,3 +32,4 @@ google-auth-oauthlib>=1.2.0
 # Utils
 python-multipart>=0.0.9
 aiofiles>=23.0.0
+langchain-google-genai>=1.0.0
