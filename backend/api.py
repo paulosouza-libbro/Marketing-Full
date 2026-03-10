@@ -309,6 +309,9 @@ async def analytics_canal(dias: int = 30):
 from routes.imagem import router as imagem_router
 app.include_router(imagem_router)
 
+from routes.assets import router as assets_router
+app.include_router(assets_router)
+
 
 # ─── Composição de thumbnail ────────────────────────────────────────────────
 
