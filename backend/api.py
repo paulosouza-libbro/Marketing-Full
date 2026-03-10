@@ -406,6 +406,7 @@ async def gerar_tasks_da_campanha(campanha_id: str, background_tasks: Background
             titulo=td["titulo"],
             descricao=td["descricao"],
             subtasks=subtasks,
+            inicio=td.get("inicio", "automatico"),
         ).model_dump()
         todas_tasks.append(task)
         novas.append(task)
@@ -448,6 +449,7 @@ async def adicionar_task(campanha_id: str, body: TaskAddRequest, background_task
         titulo=body.titulo,
         descricao=body.descricao,
         subtasks=subtasks,
+        inicio=body.inicio,
     ).model_dump()
 
     todas = load_json("tasks.json")
@@ -457,6 +459,28 @@ async def adicionar_task(campanha_id: str, body: TaskAddRequest, background_task
     background_tasks.add_task(executar_tasks, campanha_id)
 
     return task
+
+
+@app.post("/campanhas/{campanha_id}/tasks/{task_id}/iniciar")
+async def iniciar_task(campanha_id: str, task_id: str, background_tasks: BackgroundTasks):
+    """Inicia manualmente uma task que estava aguardando."""
+    todas = load_json("tasks.json")
+    task = next((t for t in todas if t["id"] == task_id and t["campanha_id"] == campanha_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task não encontrada")
+    if task["status"] != "pendente":
+        raise HTTPException(status_code=400, detail=f"Task não está pendente (status: {task['status']})")
+
+    if task["subtasks"]:
+        primeira = task["subtasks"][0]
+        primeira["status"] = "executando"
+        primeira["iniciado_em"] = datetime.now().isoformat()
+        task["status"] = "executando"
+        task["atualizado_em"] = datetime.now().isoformat()
+        save_json("tasks.json", todas)
+        background_tasks.add_task(executar_subtask, campanha_id, task_id, primeira["id"])
+
+    return {"status": "iniciada", "task_id": task_id}
 
 
 @app.delete("/campanhas/{campanha_id}/tasks/{task_id}")
@@ -531,10 +555,10 @@ async def aprovar_subtask(
 # ─── Background: execução de tasks e subtasks ──────────────────────────────────
 
 async def executar_tasks(campanha_id: str):
-    """Inicia a primeira subtask de cada task (rodam em paralelo)."""
+    """Inicia a primeira subtask de cada task com inicio=automatico (rodam em paralelo)."""
     import asyncio
     todas = load_json("tasks.json")
-    tasks_da_campanha = [t for t in todas if t["campanha_id"] == campanha_id and t["status"] == "pendente"]
+    tasks_da_campanha = [t for t in todas if t["campanha_id"] == campanha_id and t["status"] == "pendente" and t.get("inicio", "automatico") == "automatico"]
 
     agendadas = []
     for task in tasks_da_campanha:

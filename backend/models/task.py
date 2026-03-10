@@ -76,6 +76,7 @@ class Task(BaseModel):
     descricao: str
     subtasks: List[Subtask] = []
     status: str = "pendente"
+    inicio: str = "automatico"  # "automatico" | "manual"
     criado_em: str = Field(default_factory=lambda: datetime.now().isoformat())
     atualizado_em: str = Field(default_factory=lambda: datetime.now().isoformat())
 
@@ -84,6 +85,7 @@ class TaskAddRequest(BaseModel):
     titulo: str
     descricao: str
     subtasks: List[SubtaskCreate]
+    inicio: str = "automatico"  # "automatico" | "manual"
 
 
 class SubtaskApproval(BaseModel):

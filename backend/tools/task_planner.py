@@ -33,12 +33,25 @@ REGRAS:
 - Sempre inclua uma subtask de pesquisador_conto antes do copywriter quando houver copy
 - NUNCA crie tasks de roteiro de vídeo, narração, animação ou edição
 
+CAMPO "inicio":
+- "automatico": task inicia assim que a campanha é criada
+- "manual": task fica aguardando — só inicia quando o usuário clicar em "Iniciar"
+
+Use "manual" para:
+- Tasks de análise/relatório (analista) — não há dados ainda no início
+- Tasks de publicação final — aguardar aprovação de outros conteúdos primeiro
+- Tasks de growth/experimentos — iniciar somente quando houver conteúdo publicado
+
+Use "automatico" para:
+- Pesquisa, copywriting, design, SEO — devem rodar logo no início
+
 Retorne SOMENTE um JSON válido no formato:
 {
   "tasks": [
     {
       "titulo": "string",
       "descricao": "string",
+      "inicio": "automatico" | "manual",
       "subtasks": [
         {
           "titulo": "string",

@@ -90,6 +90,11 @@ export default function CampanhaDetalhe() {
     await fetchData();
   };
 
+  const iniciarTask = async (taskId: string) => {
+    await fetch(`${API}/campanhas/${campanhaId}/tasks/${taskId}/iniciar`, { method: "POST" });
+    await fetchData();
+  };
+
   const removerTask = async (taskId: string) => {
     if (!confirm("Remover esta task?")) return;
     await fetch(`${API}/campanhas/${campanhaId}/tasks/${taskId}`, { method: "DELETE" });
@@ -100,7 +105,7 @@ export default function CampanhaDetalhe() {
     await fetch(`${API}/campanhas/${campanhaId}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...novaTask, subtasks: novasSubtasks }),
+      body: JSON.stringify({ ...novaTask, inicio: (novaTask as any).inicio || "automatico", subtasks: novasSubtasks }),
     });
     setShowModal(false);
     setNovaTask({ titulo: "", descricao: "" });
@@ -184,9 +189,22 @@ export default function CampanhaDetalhe() {
                         <p className="text-zinc-500 text-xs mt-0.5">{task.descricao}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {task.inicio === "manual" && task.status === "pendente" && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-500 border border-zinc-700">
+                            início manual
+                          </span>
+                        )}
                         <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[task.status] || "bg-zinc-800 text-zinc-400"}`}>
                           {STATUS_LABEL[task.status] || task.status}
                         </span>
+                        {task.inicio === "manual" && task.status === "pendente" && (
+                          <button
+                            onClick={() => iniciarTask(task.id)}
+                            className="text-xs bg-purple-700 hover:bg-purple-600 text-white px-2 py-0.5 rounded-full transition-colors"
+                          >
+                            ▶ Iniciar
+                          </button>
+                        )}
                         <button
                           onClick={() => removerTask(task.id)}
                           className="text-zinc-700 hover:text-red-400 text-xs transition-colors"
@@ -326,6 +344,19 @@ export default function CampanhaDetalhe() {
                 />
 
                 <div>
+                  <p className="text-xs text-zinc-400 mb-2 font-medium">Modo de início</p>
+                  <div className="flex gap-2 mb-4">
+                    {[{v:"automatico",l:"▶ Automático",d:"Inicia junto com a campanha"},{v:"manual",l:"⏸ Manual",d:"Aguarda você clicar em Iniciar"}].map(opt => (
+                      <button key={opt.v}
+                        onClick={() => setNovaTask({...novaTask, inicio: opt.v} as any)}
+                        className={`flex-1 text-left px-3 py-2 rounded-xl border text-xs transition-colors ${(novaTask as any).inicio === opt.v || (!((novaTask as any).inicio) && opt.v === "automatico") ? "border-purple-600 bg-purple-900/30 text-white" : "border-zinc-700 bg-zinc-800 text-zinc-400"}`}>
+                        <p className="font-medium">{opt.l}</p>
+                        <p className="text-zinc-500 mt-0.5">{opt.d}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              <div>
                   <p className="text-xs text-zinc-400 mb-2 font-medium">Subtasks (sequenciais)</p>
                   {novasSubtasks.map((sub, idx) => (
                     <div key={idx} className="border border-zinc-700 rounded-xl p-3 mb-2 space-y-2">
