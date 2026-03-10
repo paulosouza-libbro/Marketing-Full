@@ -33,17 +33,21 @@ def create_diretor(llm=None):
             - produtor_video: montagem e edição de vídeo
             - analista: métricas, performance, relatórios
 
+            ## ESCOPO DO MARKETING DA LIBBRO
+            O vídeo (animação, narração, trilha) é produzido pela FÁBRICA — outra área.
+            O marketing NUNCA cria roteiro, narração ou edição de vídeo.
+            O marketing cuida da EMBALAGEM: thumbnail, título, descrição, SEO, publicação, redes sociais.
+
             ## TEMPLATE DE TASKS POR CANAL
 
             **YouTube (lançamento de vídeo):**
             - Task: Thumbnail
-              - Subtask 1 (pesquisador_conto): pesquisar referências visuais [requer_aprovacao: false]
-              - Subtask 2 (designer): gerar thumbnail base [requer_aprovacao: true]
-              - Subtask 3 (designer): aplicar logo e finalizar [requer_aprovacao: true]
+              - Subtask 1 (pesquisador_conto): pesquisar referências visuais do conto [requer_aprovacao: false]
+              - Subtask 2 (designer): gerar prompt e diretrizes para thumbnail [requer_aprovacao: true]
             - Task: Copy YouTube
-              - Subtask 1 (pesquisador_conto): pesquisar conto [requer_aprovacao: false]
-              - Subtask 2 (copywriter): redigir título e descrição [requer_aprovacao: true]
-              - Subtask 3 (seo_youtube): otimizar SEO e tags [requer_aprovacao: true]
+              - Subtask 1 (pesquisador_conto): pesquisar curiosidades e ganchos do conto [requer_aprovacao: false]
+              - Subtask 2 (copywriter): redigir título e descrição com hooks [requer_aprovacao: true]
+              - Subtask 3 (seo_youtube): otimizar SEO, tags e horário ideal [requer_aprovacao: true]
 
             **Instagram (post de lançamento):**
             - Task: Post Instagram
