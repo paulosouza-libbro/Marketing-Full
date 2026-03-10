@@ -69,9 +69,45 @@ def listar_assets(slug: str):
     }
 
 
+@router.post("/{slug}/assets/{tipo}/link")
+async def salvar_link_asset(slug: str, tipo: str, body: dict):
+    """Salva um link (YouTube ou Google Drive) como asset."""
+    base = ASSETS_PATH / "ilustracoes-contos" / slug
+    if not base.exists():
+        raise HTTPException(status_code=404, detail="Conto não encontrado")
+    if tipo not in ASSET_TIPOS:
+        raise HTTPException(status_code=400, detail=f"Tipo inválido.")
+
+    link = body.get("link", "").strip()
+    if not link:
+        raise HTTPException(status_code=400, detail="Link não pode ser vazio")
+    if not (link.startswith("http://") or link.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Link inválido — deve começar com http:// ou https://")
+
+    # Detecta tipo de link
+    if "youtube.com" in link or "youtu.be" in link:
+        link_tipo = "youtube"
+    elif "drive.google.com" in link:
+        link_tipo = "google_drive"
+    else:
+        link_tipo = "externo"
+
+    meta = load_assets_meta(slug)
+    meta[tipo] = {
+        "status": "preenchido",
+        "arquivo": None,
+        "link": link,
+        "link_tipo": link_tipo,
+        "enviado_em": datetime.now().isoformat(),
+    }
+    save_assets_meta(slug, meta)
+
+    return {"status": "ok", "tipo": tipo, "link": link, "link_tipo": link_tipo}
+
+
 @router.post("/{slug}/assets/{tipo}")
 async def upload_asset(slug: str, tipo: str, arquivo: UploadFile = File(...)):
-    """Faz upload de um asset para o conto."""
+    """Faz upload de um arquivo como asset."""
     base = ASSETS_PATH / "ilustracoes-contos" / slug
     if not base.exists():
         raise HTTPException(status_code=404, detail="Conto não encontrado")
@@ -84,7 +120,6 @@ async def upload_asset(slug: str, tipo: str, arquivo: UploadFile = File(...)):
     if ext not in info["extensoes"]:
         raise HTTPException(status_code=400, detail=f"Extensão {ext} não permitida para {tipo}. Use: {info['extensoes']}")
 
-    # Salva arquivo
     dest_dir = assets_path_conto(slug)
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / f"{tipo}{ext}"
@@ -92,11 +127,12 @@ async def upload_asset(slug: str, tipo: str, arquivo: UploadFile = File(...)):
     with open(dest_path, "wb") as f:
         shutil.copyfileobj(arquivo.file, f)
 
-    # Atualiza meta
     meta = load_assets_meta(slug)
     meta[tipo] = {
         "status": "preenchido",
         "arquivo": str(dest_path.name),
+        "link": None,
+        "link_tipo": None,
         "enviado_em": datetime.now().isoformat(),
         "tamanho_bytes": dest_path.stat().st_size,
     }
