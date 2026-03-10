@@ -306,7 +306,9 @@ async def analytics_canal(dias: int = 30):
 
 
 # Import de rotas adicionais
+from routes.auth import router as auth_router
 from routes.imagem import router as imagem_router
+app.include_router(auth_router)
 app.include_router(imagem_router)
 
 from routes.assets import router as assets_router
