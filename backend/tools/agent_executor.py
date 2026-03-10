@@ -101,6 +101,7 @@ def executar_agente(agente_id: str, instrucao: str, contexto_anterior: str = "")
     messages.append({"role": "user", "content": instrucao})
 
     response = client.chat.completions.create(
+        timeout=120,
         model="gpt-4o",
         messages=messages,
         temperature=0.7,
