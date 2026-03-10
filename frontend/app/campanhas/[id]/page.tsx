@@ -237,10 +237,26 @@ export default function CampanhaDetalhe() {
                               <p className="text-zinc-500 text-xs mt-0.5 truncate">{sub.agente}</p>
 
                               {/* Output da subtask */}
-                              {sub.output && (
+                              {sub.output && typeof sub.output === "string" && (
                                 <p className="text-zinc-400 text-xs mt-2 leading-relaxed border-l-2 border-zinc-700 pl-2">
                                   {sub.output}
                                 </p>
+                              )}
+                              {sub.output && typeof sub.output === "object" && sub.output.tipo === "imagem" && (
+                                <div className="mt-3 space-y-2">
+                                  <img
+                                    src={sub.output.imagem_url}
+                                    alt="Imagem gerada"
+                                    className="w-full rounded-lg border border-zinc-700"
+                                  />
+                                  {sub.output.logo_aplicada && (
+                                    <span className="text-xs text-emerald-400">✓ Logo do conto aplicada</span>
+                                  )}
+                                  <details className="text-xs text-zinc-600">
+                                    <summary className="cursor-pointer hover:text-zinc-400">Ver prompt DALL-E</summary>
+                                    <p className="mt-1 text-zinc-500 leading-relaxed">{sub.output.prompt_usado}</p>
+                                  </details>
+                                </div>
                               )}
 
                               {/* Botões de aprovação */}
