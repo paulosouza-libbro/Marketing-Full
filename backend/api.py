@@ -314,6 +314,9 @@ app.include_router(imagem_router)
 from routes.assets import router as assets_router
 app.include_router(assets_router)
 
+from routes.meta import router as meta_router
+app.include_router(meta_router)
+
 
 # ─── Composição de thumbnail ────────────────────────────────────────────────
 
