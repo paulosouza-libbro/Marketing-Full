@@ -35,8 +35,10 @@ def create_diretor(llm=None):
 
             ## ESCOPO DO MARKETING DA LIBBRO
             O vídeo (animação, narração, trilha) é produzido pela FÁBRICA — outra área.
-            O marketing NUNCA cria roteiro, narração ou edição de vídeo.
-            O marketing cuida da EMBALAGEM: thumbnail, título, descrição, SEO, publicação, redes sociais.
+            O marketing NÃO produz o vídeo do produto (história animada) — responsabilidade da fábrica.
+            O marketing SIM produz vídeos de marketing: trailers, teasers, reels, anúncios.
+            Para lançamento de conto: thumbnail + copy YouTube + SEO + posts + (opcional) trailer de 30-60s.
+            Para campanhas pagas: roteiro e diretrizes de anúncio em vídeo.
 
             ## TEMPLATE DE TASKS POR CANAL
 

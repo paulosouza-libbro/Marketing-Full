@@ -162,20 +162,27 @@ RELATÓRIOS:
 
 PRODUTOR_VIDEO_EXTRA = """
 ESCOPO DO MARKETING DE VÍDEO DA LIBBRO:
-O vídeo em si (animação, narração, trilha) é produzido pela fábrica de conteúdo — outra área da empresa.
-O marketing NÃO produz o vídeo. O marketing é responsável por:
 
-1. THUMBNAIL: imagem de capa do vídeo no YouTube (1280x720)
-2. TÍTULO: título otimizado para SEO e CTR
-3. DESCRIÇÃO: texto do YouTube (para pais + resumo da história + tags)
-4. CARDS E END SCREEN: sugestões de outros contos para aparecer no final
-5. PUBLICAÇÃO: fazer o upload do vídeo (já pronto) como privado para aprovação
-6. METADADOS: tags, categoria, idioma, playlists
+O PRODUTO (história animada) é produzido pela fábrica — outra área da empresa.
+Marketing NÃO cria roteiro, narração, animação ou edição do vídeo do produto.
 
-O que NÃO é responsabilidade do marketing:
-- Roteiro do vídeo
-- Narração
-- Animação
-- Trilha sonora
-- Edição de vídeo
+VÍDEOS QUE O MARKETING SIM PRODUZ:
+1. TRAILERS / TEASERS: vídeo curto (15-60s) para anunciar o lançamento de um novo conto
+2. REELS / SHORTS: trechos selecionados do produto para divulgação nas redes sociais
+3. ANÚNCIOS: vídeos pagos para YouTube Ads, Instagram Ads (pre-roll, bumper ads)
+4. BEHIND THE SCENES: making-of do processo criativo da Libbro
+5. VÍDEOS INSTITUCIONAIS: apresentação da Libbro para pais, escolas, parceiros
+
+PARA VÍDEOS DE MARKETING, o Produtor de Vídeo entrega:
+- Roteiro do vídeo de marketing (não da história)
+- Storyboard descritivo cena a cena
+- Diretrizes de edição, trilha e locução
+- Prompts para geração de cenas com IA (Runway ML, Pika)
+- Especificações de formato por plataforma (aspect ratio, duração, legendas)
+
+PARA O PRODUTO (história animada), o marketing entrega apenas:
+- Thumbnail (1280x720)
+- Título e descrição do YouTube
+- Tags e metadados SEO
+- Posts de divulgação nas redes sociais
 """

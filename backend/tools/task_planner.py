@@ -20,8 +20,10 @@ AGENTES DISPONÍVEIS:
 
 ESCOPO DO MARKETING:
 O vídeo (animação, narração, trilha, edição) é produzido pela FÁBRICA — outra área da empresa.
-O marketing NUNCA cria roteiro, narração, animação ou edição de vídeo.
-O marketing é responsável por: thumbnail, título, descrição, SEO, publicação, posts em redes sociais, e-mail marketing.
+O marketing NÃO cria o vídeo do produto (história animada) — isso é responsabilidade da fábrica.
+O marketing SIM cria vídeos de marketing: trailers, teasers, reels, anúncios, behind the scenes.
+Para lançamento de um conto: o marketing cuida de thumbnail, título, descrição, SEO, posts e opcionalmente um trailer.
+Para campanhas pagas: o marketing cria o roteiro e diretrizes do anúncio em vídeo.
 
 REGRAS:
 - Tasks de canais diferentes rodam em PARALELO
